@@ -1,16 +1,25 @@
 #include <raylib.h>
 #include "gameMain.h"
+#include <gameMap.h>
 #include <iostream>
 #include <fstream>
 #include <asserts.h>
+#include <assetManager.h>
 
 struct GameData {
+	GameMap gameMap;
+	Camera2D camera;
+
 	float positionX = 100;
 	float positionY = 100;
 } gameData;
 
+AssetManager assetManager;
+
 bool initGame()
 {
+	assetManager.loadAll();
+
 	return true;
 }
 
@@ -35,6 +44,7 @@ TODO: delete the following region
 	if (IsKeyDown(KEY_W)) { gameData.positionY -= 200 * deltaTime; }
 	if (IsKeyDown(KEY_S)) { gameData.positionY += 200 * deltaTime; }
 
+	DrawTexturePro(assetManager.dirt, { 0,0,(float)assetManager.dirt.width, (float)assetManager.dirt.height }, { 50,50, 100, 100 }, { 0,0 }, 0, WHITE);
 	DrawRectangle(gameData.positionX, gameData.positionY, 50, 50, {255, 0, 200, 255});
 
 	return true;
