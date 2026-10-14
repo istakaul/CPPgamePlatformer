@@ -5,6 +5,7 @@
 #include <fstream>
 #include <asserts.h>
 #include <assetManager.h>
+#include <helpers.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -20,32 +21,58 @@ bool initGame()
 {
 	assetManager.loadAll();
 
+	gameData.gameMap.create(600, 300);
+	
+	gameData.gameMap.getBlockUnsafe(0, 0).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(1, 1).type = Block::grass;
+	gameData.gameMap.getBlockUnsafe(2, 2).type = Block::blueRubyBlock;
+	gameData.gameMap.getBlockUnsafe(3, 3).type = Block::door;
+	gameData.gameMap.getBlockUnsafe(4, 4).type = Block::platform;
+
+	gameData.camera.target = { 0.f, 0.f }; // world-space center of view
+	gameData.camera.rotation = 0.f; // no rotation
+	gameData.camera.zoom = 100.f; // no zoom
+
 	return true;
 }
 
 bool updateGame()
 {
-/*
-TODO: delete the following region
-*/
-#pragma region imgui Draw Example
-	//DrawRectangle(75, 75, 100, 100, { 0,255,0,127 }); // green
-	//DrawRectangle(50, 50, 100, 100, { 255,0,0,127 }); // red
-
-	//DrawText("Congrats! You created your first window", 190, 200, 20, RED);
-	//DrawText("Congrats! You created your first window", 190, 200, 20, {255, 0, 200, 255});
-#pragma endregion
 
 	float deltaTime = GetFrameTime();
 	if (deltaTime > 1.f / 5) { deltaTime = 1.f / 5; } // limit deltaTime to a maximum of 1/5 seconds (200ms) to avoid large jumps
 
-	if (IsKeyDown(KEY_A)) { gameData.positionX -= 200 * deltaTime; }
-	if (IsKeyDown(KEY_D)) { gameData.positionX += 200 * deltaTime; }
-	if (IsKeyDown(KEY_W)) { gameData.positionY -= 200 * deltaTime; }
-	if (IsKeyDown(KEY_S)) { gameData.positionY += 200 * deltaTime; }
+	gameData.camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f }; // center of the screen
 
-	DrawTexturePro(assetManager.dirt, { 0,0,(float)assetManager.dirt.width, (float)assetManager.dirt.height }, { 50,50, 100, 100 }, { 0,0 }, 0, WHITE);
-	DrawRectangle(gameData.positionX, gameData.positionY, 50, 50, {255, 0, 200, 255});
+	ClearBackground({ 75, 75, 150, 255 }); // clear the screen with a dark green color
+
+#pragma region camera movement
+	if (IsKeyDown(KEY_LEFT)) { gameData.camera.target.x -= 7.f * deltaTime; }
+	if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += 7.f * deltaTime; }
+	if (IsKeyDown(KEY_UP)) { gameData.camera.target.y -= 7.f * deltaTime; }
+	if (IsKeyDown(KEY_DOWN)) { gameData.camera.target.y += 7.f * deltaTime; }
+#pragma endregion
+
+	BeginMode2D(gameData.camera);
+
+	for (int y = 0; y < gameData.gameMap.h; y++) {
+		for (int x = 0; x < gameData.gameMap.w; x++) {
+			auto &b = gameData.gameMap.getBlockUnsafe(x, y);
+
+			if (b.type != Block::air) {
+				DrawTexturePro(
+					assetManager.textures,
+					getTextureAtlas(b.type, 0, 32, 32), //source
+					{ (float)x, (float)y, 1, 1 }, //destination
+					{ 0,0 }, //origin of block, where it will start drawing from - top left corner
+					0.f, // rotation
+					WHITE // tint
+				);
+			}
+		}
+	}
+	
+	EndMode2D();
 
 	return true;
 }
