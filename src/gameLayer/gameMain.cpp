@@ -6,16 +6,22 @@
 #include <asserts.h>
 #include <assetManager.h>
 #include <helpers.h>
+#include <imgui.h>
+#include <rlImGui.h>
+#include <../ImGui_Theme/BlackDevil.h>
 
 struct GameData {
 	GameMap gameMap;
 	Camera2D camera;
 
-	float positionX = 100;
-	float positionY = 100;
+	int creativeSelectedBlock = Block::dirt; // currently selected block
 } gameData;
 
 AssetManager assetManager;
+
+static float CAMERA_SPEED = 50;
+
+bool isShowImgui = false;
 
 bool initGame()
 {
@@ -46,6 +52,10 @@ bool updateGame()
 
 	ClearBackground({ 75, 75, 150, 255 }); // clear the screen with a dark green color
 
+	if (IsKeyPressed(KEY_F10)) {
+		isShowImgui = !isShowImgui;
+	}
+
 #pragma region camera movement
 	if (IsKeyDown(KEY_LEFT)) { gameData.camera.target.x -= 7.f * deltaTime; }
 	if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += 7.f * deltaTime; }
@@ -57,17 +67,25 @@ bool updateGame()
 	int blockX = (int)floor(worldPos.x);
 	int blockY = (int)floor(worldPos.y);
 
-	if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-		auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
-		if (b) {
-			*b = {};
-		}
-	}
+	// make sure we cannot select an inexisting block
+	if (gameData.creativeSelectedBlock < 0) { gameData.creativeSelectedBlock = 0; }
+	if (gameData.creativeSelectedBlock >= Block::BLOCKS_COUNT) { gameData.creativeSelectedBlock = Block::BLOCKS_COUNT - 1; }
 
-	if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-		auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
-		if (b) {
-			b->type = Block::dirt;
+
+	if (!isShowImgui) {
+
+		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b) {
+				*b = {};
+			}
+		}
+
+		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b) {
+				b->type = gameData.creativeSelectedBlock;
+			}
 		}
 	}
 
@@ -101,7 +119,47 @@ bool updateGame()
 	
 	EndMode2D();
 
+	showImgui(isShowImgui);
+
+	DrawFPS(10, 10);
+
 	return true;
+}
+
+void showImgui(bool isShowImgui)
+{
+	if (isShowImgui) {
+		ImGui::Begin("Game Control");
+
+		ImGui::SliderFloat("Camera zoom:", &gameData.camera.zoom, 1, 150);
+		ImGui::SliderFloat("Camera speed", &CAMERA_SPEED, 5, 30);
+
+		ImGui::Separator();
+
+		for (int i = 0; i < Block::BLOCKS_COUNT; i++) {
+			auto atlas = getTextureAtlas(i, 0, 32, 32);
+			atlas.x /= assetManager.textures.width;
+			atlas.width /= assetManager.textures.width;
+			atlas.y /= assetManager.textures.height;
+			atlas.height /= assetManager.textures.height;
+	
+			ImGui::PushID(i);
+			ImTextureID tex = (ImTextureID)(intptr_t)assetManager.textures.id;
+
+			if (ImGui::ImageButton(tex, { 35,35 }, { atlas.x, atlas.y }, { atlas.x + atlas.width, atlas.y + atlas.height })) {
+				gameData.creativeSelectedBlock = i;
+			}
+
+			ImGui::PopID();
+			if (i % 10 != 0) {
+				ImGui::SameLine();
+			}
+		}
+
+		ImGui::InputInt("Select Block", &gameData.creativeSelectedBlock);
+
+		ImGui::End();
+	}
 }
 
 void closeGame()
