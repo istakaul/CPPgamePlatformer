@@ -108,14 +108,28 @@ bool updateGame()
 		}
 	}
 
-	DrawTexturePro(
-		assetManager.frame,
-		{0,0,(float)assetManager.frame.width, (float)assetManager.frame.height},
-		{(float)blockX, (float)blockY,1,1},
-		{0,0},
-		0.f,
-		WHITE
-	);
+	if (gameData.creativeSelectedBlock > 0) {
+		DrawTexturePro(
+			assetManager.textures,
+			getTextureAtlas(gameData.creativeSelectedBlock, 0, 32, 32),
+			{ (float)blockX, (float)blockY,1,1 },
+			{ 0,0 },
+			0.f,
+			WHITE
+		);
+	}
+	else {
+
+		DrawTexturePro(
+			assetManager.frame,
+			{0,0,(float)assetManager.frame.width, (float)assetManager.frame.height},
+			{(float)blockX, (float)blockY,1,1},
+			{0,0},
+			0.f,
+			WHITE
+		);
+	}
+
 	
 	EndMode2D();
 
