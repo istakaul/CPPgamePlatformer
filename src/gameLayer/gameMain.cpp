@@ -14,7 +14,7 @@ struct GameData {
 	GameMap gameMap;
 	Camera2D camera;
 
-	int creativeSelectedBlock = Block::dirt; // currently selected block
+	int creativeSelectedBlock = Block::air; // currently selected block
 } gameData;
 
 AssetManager assetManager;
@@ -72,22 +72,9 @@ bool updateGame()
 	if (gameData.creativeSelectedBlock >= Block::BLOCKS_COUNT) { gameData.creativeSelectedBlock = Block::BLOCKS_COUNT - 1; }
 
 
-	if (!isShowImgui) {
 
-		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
-			if (b) {
-				*b = {};
-			}
-		}
 
-		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
-			if (b) {
-				b->type = gameData.creativeSelectedBlock;
-			}
-		}
-	}
+	levelDesignInput(blockX, blockY);
 
 	BeginMode2D(gameData.camera);
 
@@ -138,6 +125,32 @@ bool updateGame()
 	DrawFPS(10, 10);
 
 	return true;
+}
+
+void levelDesignInput(int blockX, int blockY)
+{
+	if (!isShowImgui) {
+
+		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b) {
+				*b = {};
+			}
+		}
+
+		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b) {
+				b->type = gameData.creativeSelectedBlock;
+			}
+		}
+	}
+	else if (IsKeyDown(KEY_LEFT_CONTROL) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b) {
+				gameData.creativeSelectedBlock = b->type;
+			}
+		}
 }
 
 void showImgui(bool isShowImgui)
