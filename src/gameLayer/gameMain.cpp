@@ -1,6 +1,8 @@
 #include <raylib.h>
 #include "gameMain.h"
 #include <gameMap.h>
+#include <structure.h>
+#include <saveMap.h>
 #include <iostream>
 #include <fstream>
 #include <asserts.h>
@@ -15,6 +17,14 @@ struct GameData {
 	Camera2D camera;
 
 	int creativeSelectedBlock = Block::air; // currently selected block
+
+	// These are map points where we select an item on the map
+	Vector2 selectionStart = {};
+	Vector2 selectionEnd = {};
+	Structure copyStructure;
+
+	char saveName[100] = {};
+
 } gameData;
 
 AssetManager assetManager;
@@ -71,9 +81,6 @@ bool updateGame()
 	if (gameData.creativeSelectedBlock < 0) { gameData.creativeSelectedBlock = 0; }
 	if (gameData.creativeSelectedBlock >= Block::BLOCKS_COUNT) { gameData.creativeSelectedBlock = Block::BLOCKS_COUNT - 1; }
 
-
-
-
 	levelDesignInput(blockX, blockY);
 
 	BeginMode2D(gameData.camera);
@@ -95,6 +102,7 @@ bool updateGame()
 		}
 	}
 
+	// draw selected block (we draw it after the map so that it is displayed on top)
 	if (gameData.creativeSelectedBlock > 0) {
 		DrawTexturePro(
 			assetManager.textures,
@@ -117,6 +125,20 @@ bool updateGame()
 		);
 	}
 
+	if (isShowImgui) {
+		
+		Rectangle rect;
+		rect.x = gameData.selectionStart.x;
+		rect.y = gameData.selectionStart.y;
+
+		rect.width = gameData.selectionEnd.x - gameData.selectionStart.x;
+		rect.height = gameData.selectionEnd.y - gameData.selectionStart.y;
+
+		rect.width++;
+		rect.height++;
+
+		DrawRectangleLinesEx(rect, 0.1, { 20, 101, 250, 145 });
+	}
 	
 	EndMode2D();
 
@@ -129,6 +151,22 @@ bool updateGame()
 
 void levelDesignInput(int blockX, int blockY)
 {
+	if (isShowImgui) {
+		if (IsKeyPressed(KEY_ONE)) { gameData.selectionStart = Vector2{ float(blockX), float(blockY) }; }
+		if (IsKeyPressed(KEY_TWO)) { gameData.selectionEnd = Vector2{ float(blockX), float(blockY) }; }
+		if(IsKeyPressed(KEY_THREE)) {
+			gameData.copyStructure.pasteIntoMap(gameData.gameMap, Vector2{ float(blockX), float(blockY) });
+		}
+
+		// Make sure the start is smaller than the end
+		if (gameData.selectionStart.x > gameData.selectionEnd.x) {
+			std::swap(gameData.selectionStart.x, gameData.selectionEnd.x);
+		}
+		if (gameData.selectionStart.y > gameData.selectionEnd.y) {
+			std::swap(gameData.selectionStart.y, gameData.selectionEnd.y);
+		}
+	}
+
 	if (!isShowImgui) {
 
 		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
@@ -160,6 +198,34 @@ void showImgui(bool isShowImgui)
 
 		ImGui::SliderFloat("Camera zoom:", &gameData.camera.zoom, 1, 150);
 		ImGui::SliderFloat("Camera speed", &CAMERA_SPEED, 5, 30);
+
+		if (ImGui::Button("Copy")) {
+			gameData.copyStructure.copyFromMap(gameData.gameMap,
+				gameData.selectionStart, gameData.selectionEnd);
+		}
+
+		ImGui::InputText("File Name", gameData.saveName, sizeof(gameData.saveName));
+
+		if (ImGui::Button("Save to File")) {
+			std::string path = RESOURCES_PATH "structures/";
+			path += gameData.saveName;
+			path += ".bin";
+
+			saveBlockDataToFile(gameData.copyStructure.mapData,
+				gameData.copyStructure.w, gameData.copyStructure.h,
+				path.c_str());
+		}
+
+		if (ImGui::Button("Load from File")) {
+			std::string path = RESOURCES_PATH "structures/";
+			path += gameData.saveName;
+			path += ".bin";
+
+			loadBlockDataFromFile(gameData.copyStructure.mapData,
+				gameData.copyStructure.w, gameData.copyStructure.h,
+				path.c_str());
+		}
+
 
 		ImGui::Separator();
 
