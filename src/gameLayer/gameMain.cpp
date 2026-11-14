@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <rlImGui.h>
 #include <../ImGui_Theme/BlackDevil.h>
+#include <physics.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -45,7 +46,7 @@ bool initGame()
 	gameData.gameMap.getBlockUnsafe(3, 3).type = Block::door;
 	gameData.gameMap.getBlockUnsafe(4, 4).type = Block::platform;
 
-	gameData.camera.target = { 0.f, 0.f }; // world-space center of view
+	gameData.camera.target = { 20.f, 120.f }; // world-space center of view
 	gameData.camera.rotation = 0.f; // no rotation
 	gameData.camera.zoom = 100.f; // no zoom
 
@@ -139,6 +140,32 @@ bool updateGame()
 
 		DrawRectangleLinesEx(rect, 0.1, { 20, 101, 250, 145 });
 	}
+
+	Transform2D test;
+	test.pos = { 20.5, 120.5 };
+	test.w = 1;
+	test.h = 1;
+
+	Transform2D test2;
+	test2.pos = worldPos;
+	test2.w = 1;
+	test2.h = 1;
+
+	if (test.intersectTransform(test2)) {
+		DrawRectangleLinesEx(test.getAABB(), 0.1, GREEN);
+		DrawRectangleLinesEx(test2.getAABB(), 0.1, GREEN);
+	}
+	else {
+		DrawRectangleLinesEx(test.getAABB(), 0.1, BLUE);
+		DrawRectangleLinesEx(test2.getAABB(), 0.1, RED);
+	}
+
+	//if (test.intersectPoint(worldPos)) {
+	//	DrawRectangleLinesEx(test.getAABB(), 0.1, GREEN);
+	//}
+	//else {
+	//	DrawRectangleLinesEx(test.getAABB(), 0.1, BLUE);
+	//}
 	
 	EndMode2D();
 
