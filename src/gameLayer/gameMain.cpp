@@ -26,6 +26,8 @@ struct GameData {
 
 	char saveName[100] = {};
 
+	PhysicalEntity player;
+
 } gameData;
 
 AssetManager assetManager;
@@ -41,6 +43,10 @@ bool initGame()
 	gameData.gameMap.create(600, 300);
 	
 	gameData.gameMap.getBlockUnsafe(0, 0).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(19, 125).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(20, 125).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(21, 125).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(22, 125).type = Block::dirt;
 	gameData.gameMap.getBlockUnsafe(1, 1).type = Block::grass;
 	gameData.gameMap.getBlockUnsafe(2, 2).type = Block::blueRubyBlock;
 	gameData.gameMap.getBlockUnsafe(3, 3).type = Block::door;
@@ -49,6 +55,10 @@ bool initGame()
 	gameData.camera.target = { 20.f, 120.f }; // world-space center of view
 	gameData.camera.rotation = 0.f; // no rotation
 	gameData.camera.zoom = 100.f; // no zoom
+
+	gameData.player.teleport({ 20,120 });
+	gameData.player.transform.w = 0.9f;
+	gameData.player.transform.h = 1.8f;
 
 	return true;
 }
@@ -68,12 +78,30 @@ bool updateGame()
 	}
 
 #pragma region camera movement
-	if (IsKeyDown(KEY_LEFT)) { gameData.camera.target.x -= 7.f * deltaTime; }
-	if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += 7.f * deltaTime; }
-	if (IsKeyDown(KEY_UP)) { gameData.camera.target.y -= 7.f * deltaTime; }
-	if (IsKeyDown(KEY_DOWN)) { gameData.camera.target.y += 7.f * deltaTime; }
+	//if (IsKeyDown(KEY_LEFT)) { gameData.camera.target.x -= 7.f * deltaTime; }
+	//if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += 7.f * deltaTime; }
+	//if (IsKeyDown(KEY_UP)) { gameData.camera.target.y -= 7.f * deltaTime; }
+	//if (IsKeyDown(KEY_DOWN)) { gameData.camera.target.y += 7.f * deltaTime; }
 #pragma endregion
 
+#pragma region player movement
+
+	static float CAMERA_SPEED = 10;
+	if (IsKeyDown(KEY_LEFT)) { gameData.player.transform.pos.x -= CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_RIGHT)) { gameData.player.transform.pos.x += CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_UP)) { gameData.player.transform.pos.y -= CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_DOWN)) { gameData.player.transform.pos.y += CAMERA_SPEED * GetFrameTime(); }
+
+#pragma endregion
+
+#pragma region entities
+
+	gameData.player.applyGravity();
+	gameData.player.updateForces(deltaTime);
+	gameData.camera.target = gameData.player.transform.pos;
+	gameData.player.updateFinal();
+
+#pragma endregion
 	Vector2 worldPos = GetScreenToWorld2D(GetMousePosition(), gameData.camera);
 	int blockX = (int)floor(worldPos.x);
 	int blockY = (int)floor(worldPos.y);
@@ -166,6 +194,30 @@ bool updateGame()
 	//else {
 	//	DrawRectangleLinesEx(test.getAABB(), 0.1, BLUE);
 	//}
+
+#pragma region draw Player
+	
+	Transform2D playerSprite = gameData.player.transform;
+	playerSprite.w = 1;
+	playerSprite.h = 2;
+
+	// move the sprite so that the bottom of the sprite matches the bottom of the collider
+	playerSprite.pos.y -= (playerSprite.h - gameData.player.transform.h) / 2;
+
+	DrawTexturePro(
+		assetManager.player,
+		{0,0, (float)assetManager.player.width, (float)assetManager.player.height},
+		playerSprite.getAABB(), // dest
+		{0,0}, // origin (top-left corner)
+		0.0f, // rotation
+		WHITE // tint
+	);
+	
+	// draw the outline to see what the real collider is
+	DrawRectangleLinesEx(gameData.player.transform.getAABB(), 0.1, { 20, 101, 250, 120 });
+
+#pragma endregion
+
 	
 	EndMode2D();
 

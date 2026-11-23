@@ -1,5 +1,95 @@
 #pragma once
 #include <raylib.h>
+#include <raymath.h>
+
+// Vector2 operator overloads
+inline Vector2 operator+(const Vector2 &a, const Vector2 &b)
+{
+	return { a.x + b.x, a.y + b.y };
+}
+
+inline Vector2 operator-(const Vector2 &a, const Vector2 &b)
+{
+	return { a.x - b.x, a.y - b.y };
+}
+
+inline Vector2 operator*(const Vector2 &a, float scalar)
+{
+	return { a.x * scalar, a.y * scalar };
+}
+
+inline Vector2 operator/(const Vector2 &a, float scalar)
+{
+	return { a.x / scalar, a.y / scalar };
+}
+
+
+inline Vector2 &operator*=(Vector2 &a, float scalar)
+{
+	a.x *= scalar;
+	a.y *= scalar;
+	return a;
+}
+
+inline Vector2 &operator/=(Vector2 &a, float scalar)
+{
+	a.x /= scalar;
+	a.y /= scalar;
+	return a;
+}
+
+inline Vector2 &operator+=(Vector2 &a, float scalar)
+{
+	a.x += scalar;
+	a.y += scalar;
+	return a;
+}
+
+inline Vector2 &operator-=(Vector2 &a, float scalar)
+{
+	a.x -= scalar;
+	a.y -= scalar;
+	return a;
+}
+
+
+inline bool operator==(const Vector2 &a, const Vector2 &b)
+{
+	return a.x == b.x && a.y == b.y;
+}
+
+inline bool operator!=(const Vector2 &a, const Vector2 &b)
+{
+	return !(a == b);
+}
+
+inline Vector2 &operator+=(Vector2 &a, const Vector2 &b)
+{
+	a.x += b.x;
+	a.y += b.y;
+	return a;
+}
+
+inline Vector2 &operator-=(Vector2 &a, const Vector2 &b)
+{
+	a.x -= b.x;
+	a.y -= b.y;
+	return a;
+}
+
+inline Vector2 &operator*=(Vector2 &a, const Vector2 &b)
+{
+	a.x *= b.x;
+	a.y *= b.y;
+	return a;
+}
+
+inline Vector2 &operator/=(Vector2 &a, const Vector2 &b)
+{
+	a.x /= b.x;
+	a.y /= b.y;
+	return a;
+}
 
 struct Transform2D {
 	// center of the entity
@@ -55,5 +145,53 @@ struct Transform2D {
 		b.height += 2 * delta;
 
 		return CheckCollisionRecs(a, b);
+	}
+};
+
+struct PhysicalEntity {
+	Transform2D transform;
+	Vector2 lastPosition = {};
+
+	Vector2 velocity = {};
+	Vector2 acceleration = {};
+
+	void teleport(Vector2 pos) {
+		transform.pos = pos;
+		lastPosition = pos;
+	}
+
+	void updateForces(float deltaTime) {
+		velocity += acceleration * deltaTime; // h taxuthta einai sunarthsh ths allaghs ths epitaxunshs mesa sto xrono
+		transform.pos += velocity * deltaTime; // h 8esh einai sunarthsh ths allaghs ths taxuthtas mesa sto xrono.
+
+		// adraneia (friction)
+		//velocity -= velocity * 0.1 * deltaTime;
+		Vector2 dragVector = Vector2{ velocity.x * std::abs(velocity.x), velocity.y * std::abs(velocity.y) };
+		float drag = 0.01f;
+
+		// #include <raymath.h>
+		if (Vector2Length(dragVector) * drag * deltaTime > Vector2Length(velocity)) {
+			velocity = {};
+		}
+		else {
+			velocity -= dragVector * drag * deltaTime;
+		}
+
+		if (Vector2Length(velocity) < 0.01) {
+			velocity = {};
+		}
+
+		acceleration = {}; // we apply acceleration only when moving the object.
+
+	}
+
+	// called at the end of the frame for every entity
+	// (we will use the lastPosition to substract it from the currentPosition in order to get the direction the entity is looking at)
+	void updateFinal() {
+		lastPosition = { transform.pos.x, transform.pos.y };
+	}
+
+	void applyGravity(){
+		acceleration += {0, 20.0};
 	}
 };
