@@ -38,6 +38,7 @@ static float CAMERA_SPEED = 50;
 
 bool isShowImgui = false;
 
+
 bool initGame()
 {
 	assetManager.loadAll();
@@ -49,6 +50,18 @@ bool initGame()
 	gameData.gameMap.getBlockUnsafe(20, 125).type = Block::dirt;
 	gameData.gameMap.getBlockUnsafe(21, 125).type = Block::dirt;
 	gameData.gameMap.getBlockUnsafe(22, 125).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(23, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(24, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(25, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(26, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(27, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(28, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(29, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(30, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(31, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(32, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(33, 126).type = Block::dirt;
+	gameData.gameMap.getBlockUnsafe(34, 126).type = Block::dirt;
 	gameData.gameMap.getBlockUnsafe(1, 1).type = Block::grass;
 	gameData.gameMap.getBlockUnsafe(2, 2).type = Block::blueRubyBlock;
 	gameData.gameMap.getBlockUnsafe(3, 3).type = Block::door;
@@ -96,6 +109,8 @@ bool updateGame()
 	if (IsKeyDown(KEY_UP)) { gameData.player.transform.pos.y -= CAMERA_SPEED * deltaTime; }
 	if (IsKeyDown(KEY_DOWN)) { gameData.player.transform.pos.y += CAMERA_SPEED * deltaTime; }
 
+	if (IsKeyDown(KEY_SPACE)) { gameData.player.jump(10); }
+
 #pragma endregion
 
 #pragma region entities
@@ -108,7 +123,8 @@ bool updateGame()
 	gameData.player.updateFinal();
 
 	// slime
-	gameData.slime.update(deltaTime);
+	std::ranlux24_base rng(std::random_device{}());
+	gameData.slime.update(deltaTime, rng, gameData.player.transform.pos);
 	gameData.slime.physics.applyGravity();
 
 	gameData.slime.physics.updateForces(deltaTime);
