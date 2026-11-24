@@ -1,7 +1,10 @@
 #pragma once
 #include <raylib.h>
 #include <raymath.h>
+#include <cmath>
 
+
+#pragma region Vector2 operator overloads
 // Vector2 operator overloads
 inline Vector2 operator+(const Vector2 &a, const Vector2 &b)
 {
@@ -91,6 +94,8 @@ inline Vector2 &operator/=(Vector2 &a, const Vector2 &b)
 	return a;
 }
 
+#pragma endregion
+
 struct Transform2D {
 	// center of the entity
 	Vector2 pos = {}; 
@@ -148,12 +153,21 @@ struct Transform2D {
 	}
 };
 
+// forward declaration (we tell the compiler that GameMap already exists, and then include the GameMap.h in the physics.cpp where it will be used)
+// You can do a forward declaration when you use a struct/class in a header file only as a reference/pointer (we use a reference of GameMap in the performCollisionOnOneAxis() method)
+struct GameMap; 
+
 struct PhysicalEntity {
 	Transform2D transform;
 	Vector2 lastPosition = {};
 
 	Vector2 velocity = {};
 	Vector2 acceleration = {};
+
+	bool upTouch = 0;
+	bool downTouch = 0;
+	bool leftTouch = 0;
+	bool rightTouch = 0;
 
 	void teleport(Vector2 pos) {
 		transform.pos = pos;
@@ -194,4 +208,11 @@ struct PhysicalEntity {
 	void applyGravity(){
 		acceleration += {0, 20.0};
 	}
+
+	// function to resolve the collisions
+	void resolveConstraints(GameMap &mapData);
+
+	void checkCollisionOnce(Vector2 &pos, GameMap &mapData);
+
+	Vector2 performCollisionOnOneAxis(GameMap &mapData, Vector2 pos, Vector2 delta); // with the &mapData we get a reference to the original mapData and it's tile, whereas if it wasn't a reference (& was omitted) we would have got a copy 
 };

@@ -12,6 +12,7 @@
 #include <rlImGui.h>
 #include <../ImGui_Theme/BlackDevil.h>
 #include <physics.h>
+#include <entities/slime.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -27,6 +28,7 @@ struct GameData {
 	char saveName[100] = {};
 
 	PhysicalEntity player;
+	Slime slime;
 
 } gameData;
 
@@ -56,9 +58,11 @@ bool initGame()
 	gameData.camera.rotation = 0.f; // no rotation
 	gameData.camera.zoom = 100.f; // no zoom
 
-	gameData.player.teleport({ 20,120 });
+	gameData.player.teleport({ 20,100 });
 	gameData.player.transform.w = 0.9f;
 	gameData.player.transform.h = 1.8f;
+
+	gameData.slime.physics.teleport({ 22, 100 });
 
 	return true;
 }
@@ -87,10 +91,10 @@ bool updateGame()
 #pragma region player movement
 
 	static float CAMERA_SPEED = 10;
-	if (IsKeyDown(KEY_LEFT)) { gameData.player.transform.pos.x -= CAMERA_SPEED * GetFrameTime(); }
-	if (IsKeyDown(KEY_RIGHT)) { gameData.player.transform.pos.x += CAMERA_SPEED * GetFrameTime(); }
-	if (IsKeyDown(KEY_UP)) { gameData.player.transform.pos.y -= CAMERA_SPEED * GetFrameTime(); }
-	if (IsKeyDown(KEY_DOWN)) { gameData.player.transform.pos.y += CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_LEFT)) { gameData.player.transform.pos.x -= CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_RIGHT)) { gameData.player.transform.pos.x += CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_UP)) { gameData.player.transform.pos.y -= CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_DOWN)) { gameData.player.transform.pos.y += CAMERA_SPEED * deltaTime; }
 
 #pragma endregion
 
@@ -98,10 +102,21 @@ bool updateGame()
 
 	gameData.player.applyGravity();
 	gameData.player.updateForces(deltaTime);
+	gameData.player.resolveConstraints(gameData.gameMap);
+	//gameData.player.checkCollisionOnce(gameData.player.transform.pos, gameData.gameMap);
 	gameData.camera.target = gameData.player.transform.pos;
 	gameData.player.updateFinal();
 
+	// slime
+	gameData.slime.update(deltaTime);
+	gameData.slime.physics.applyGravity();
+
+	gameData.slime.physics.updateForces(deltaTime);
+	gameData.slime.physics.resolveConstraints(gameData.gameMap);
+	gameData.slime.physics.updateFinal();
+
 #pragma endregion
+
 	Vector2 worldPos = GetScreenToWorld2D(GetMousePosition(), gameData.camera);
 	int blockX = (int)floor(worldPos.x);
 	int blockY = (int)floor(worldPos.y);
@@ -194,6 +209,8 @@ bool updateGame()
 	//else {
 	//	DrawRectangleLinesEx(test.getAABB(), 0.1, BLUE);
 	//}
+
+	gameData.slime.render(assetManager);
 
 #pragma region draw Player
 	
