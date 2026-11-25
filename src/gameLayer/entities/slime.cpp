@@ -9,12 +9,16 @@ void Slime::render(AssetManager &assetManager)
 
 	DrawTexturePro(
 		assetManager.slime,
-		getTextureAtlas(0, 0, 32, 32),
+		getTextureAtlas(animation.positionX, animation.positionY, 32, 32),
 		aabb, // dest
 		{0,0}, // origin
 		0.0f, // rotation
 		WHITE // tint
 	);
+
+	// notice we don't update the animation during rendering because
+	// if for some reason we want to render the entity twice we shouldn't update it here as well 
+	// or we may want to update the animations even if we don't want to render the entity
 }
 
 void Slime::update(float deltaTime, std::ranlux24_base rng, Vector2 playerPosition)
@@ -39,8 +43,13 @@ void Slime::update(float deltaTime, std::ranlux24_base rng, Vector2 playerPositi
 		}
 	}
 
+	// every frame we set the animation, based on whether the slime touches the ground or not.
 	if (physics.downTouch) {
 		moveSpeed = 0; // we set that to 0 when we touch the ground, so that it doesn't move
+		animation.setAnimation(0); // staying
+	}
+	else {
+		animation.setAnimation(1); // in air
 	}
 
 	jumpTimer -= deltaTime;
@@ -77,4 +86,6 @@ void Slime::update(float deltaTime, std::ranlux24_base rng, Vector2 playerPositi
 	if (moveSpeed) {
 		getPosition().x += deltaTime * moveSpeed;
 	}
+
+	animation.update(deltaTime, 0.08, 7);
 }
