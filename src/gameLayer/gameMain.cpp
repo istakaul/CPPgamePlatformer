@@ -13,6 +13,7 @@
 #include <../ImGui_Theme/BlackDevil.h>
 #include <physics.h>
 #include <entities/slime.h>
+#include <entityIdHolder.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -28,7 +29,7 @@ struct GameData {
 	char saveName[100] = {};
 
 	PhysicalEntity player;
-	Slime slime;
+	EntityHolder entities;
 
 } gameData;
 
@@ -38,6 +39,12 @@ static float CAMERA_SPEED = 50;
 
 bool isShowImgui = false;
 
+void spawnSlime(Vector2 position) {
+	Slime slime;
+	slime.physics.teleport(position);
+	auto id = gameData.entities.idHolder.getEntityIdAndIncrement();
+	gameData.entities.entities[id] = slime;
+}
 
 bool initGame()
 {
@@ -75,7 +82,7 @@ bool initGame()
 	gameData.player.transform.w = 0.9f;
 	gameData.player.transform.h = 1.8f;
 
-	gameData.slime.physics.teleport({ 22, 100 });
+	spawnSlime({ 22, 100 });
 
 	return true;
 }
@@ -122,14 +129,16 @@ bool updateGame()
 	gameData.camera.target = gameData.player.transform.pos;
 	gameData.player.updateFinal();
 
-	// slime
 	std::ranlux24_base rng(std::random_device{}());
-	gameData.slime.update(deltaTime, rng, gameData.player.transform.pos);
-	gameData.slime.physics.applyGravity();
+	// update all entities
+	for (auto &e : gameData.entities.entities) {
 
-	gameData.slime.physics.updateForces(deltaTime);
-	gameData.slime.physics.resolveConstraints(gameData.gameMap);
-	gameData.slime.physics.updateFinal();
+		e.second.update(deltaTime, rng, gameData.player.transform.pos);
+		e.second.physics.applyGravity();
+		e.second.physics.updateForces(deltaTime);
+		e.second.physics.resolveConstraints(gameData.gameMap);
+		e.second.physics.updateFinal();
+	}
 
 #pragma endregion
 
@@ -226,7 +235,9 @@ bool updateGame()
 	//	DrawRectangleLinesEx(test.getAABB(), 0.1, BLUE);
 	//}
 
-	gameData.slime.render(assetManager);
+	for (auto &e : gameData.entities.entities) {
+		e.second.render(assetManager);
+	}
 
 #pragma region draw Player
 	
@@ -310,6 +321,10 @@ void showImgui(bool isShowImgui)
 
 		ImGui::SliderFloat("Camera zoom:", &gameData.camera.zoom, 1, 150);
 		ImGui::SliderFloat("Camera speed", &CAMERA_SPEED, 5, 30);
+
+		if (ImGui::Button("Spawn Slime")) {
+			spawnSlime({ 22, 100 });
+		}
 
 		if (ImGui::Button("Copy")) {
 			gameData.copyStructure.copyFromMap(gameData.gameMap,
