@@ -218,6 +218,10 @@ struct PhysicalEntity {
 		}
 	}
 
+	Vector2 &getPosition() {
+		return transform.pos;
+	}
+
 	// function to resolve the collisions
 	void resolveConstraints(GameMap &mapData);
 

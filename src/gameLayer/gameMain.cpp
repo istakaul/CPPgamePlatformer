@@ -14,6 +14,7 @@
 #include <physics.h>
 #include <entities/slime.h>
 #include <entityIdHolder.h>
+#include <entity.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -43,7 +44,7 @@ void spawnSlime(Vector2 position) {
 	Slime slime;
 	slime.physics.teleport(position);
 	auto id = gameData.entities.idHolder.getEntityIdAndIncrement();
-	gameData.entities.entities[id] = slime;
+	gameData.entities.entities[id] = std::make_unique<Slime>(slime);
 }
 
 bool initGame()
@@ -130,14 +131,21 @@ bool updateGame()
 	gameData.player.updateFinal();
 
 	std::ranlux24_base rng(std::random_device{}());
+	
 	// update all entities
+
+	EntityUpdateData updateData{
+		gameData.player.getPosition(),
+		rng
+	};
+
 	for (auto &e : gameData.entities.entities) {
 
-		e.second.update(deltaTime, rng, gameData.player.transform.pos);
-		e.second.physics.applyGravity();
-		e.second.physics.updateForces(deltaTime);
-		e.second.physics.resolveConstraints(gameData.gameMap);
-		e.second.physics.updateFinal();
+		e.second->update(deltaTime, updateData);
+		e.second->physics.applyGravity();
+		e.second->physics.updateForces(deltaTime);
+		e.second->physics.resolveConstraints(gameData.gameMap);
+		e.second->physics.updateFinal();
 	}
 
 #pragma endregion
@@ -236,7 +244,7 @@ bool updateGame()
 	//}
 
 	for (auto &e : gameData.entities.entities) {
-		e.second.render(assetManager);
+		e.second->render(assetManager);
 	}
 
 #pragma region draw Player
