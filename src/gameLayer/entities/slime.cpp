@@ -21,7 +21,7 @@ void Slime::render(AssetManager &assetManager)
 	// or we may want to update the animations even if we don't want to render the entity
 }
 
-void Slime::update(float deltaTime, EntityUpdateData entityUpdateData)
+bool Slime::update(float deltaTime, EntityUpdateData entityUpdateData)
 {
 	changeStateTimer -= deltaTime;
 
@@ -88,4 +88,6 @@ void Slime::update(float deltaTime, EntityUpdateData entityUpdateData)
 	}
 
 	animation.update(deltaTime, 0.08, 7);
+
+	return true;
 }

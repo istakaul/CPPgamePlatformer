@@ -15,6 +15,7 @@
 #include <entities/slime.h>
 #include <entityIdHolder.h>
 #include <entity.h>
+#include <entities/droppedItem.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -45,6 +46,14 @@ void spawnSlime(Vector2 position) {
 	slime.physics.teleport(position);
 	auto id = gameData.entities.idHolder.getEntityIdAndIncrement();
 	gameData.entities.entities[id] = std::make_unique<Slime>(slime);
+}
+
+void spawnDroppedItem(Vector2 position, int type) {
+	DroppedItem droppedItem;
+	droppedItem.teleport(position);
+	droppedItem.itemType = type;
+	auto id = gameData.entities.idHolder.getEntityIdAndIncrement();
+	gameData.entities.entities[id] = (std::make_unique<DroppedItem>(droppedItem));
 }
 
 bool initGame()
@@ -134,18 +143,36 @@ bool updateGame()
 	
 	// update all entities
 
-	EntityUpdateData updateData{
-		gameData.player.getPosition(),
-		rng
-	};
+	for (auto it = gameData.entities.entities.begin(); it != gameData.entities.entities.end();) {
 
-	for (auto &e : gameData.entities.entities) {
+		EntityUpdateData updateData{
+			gameData.player.getPosition(),
+			rng,
+			gameData.entities,
+			it->first
+		};
 
-		e.second->update(deltaTime, updateData);
-		e.second->physics.applyGravity();
-		e.second->physics.updateForces(deltaTime);
-		e.second->physics.resolveConstraints(gameData.gameMap);
-		e.second->physics.updateFinal();
+		bool shouldKill = false;
+
+		// if the update() returns 0 then erase the item in the next if (which by its turn will return the next iterator)
+		if (!it->second->update(deltaTime, updateData)) { 
+			shouldKill = true;
+		}
+
+		if (shouldKill) {
+			// erase returns the next valid iterator
+			it = gameData.entities.entities.erase(it);
+		}
+		else {
+			// physics
+			//it->second->update(deltaTime, updateData);
+			it->second->physics.applyGravity();
+			it->second->physics.updateForces(deltaTime);
+			it->second->physics.resolveConstraints(gameData.gameMap);
+			it->second->physics.updateFinal();
+
+			++it;
+		}
 	}
 
 #pragma endregion
@@ -303,8 +330,11 @@ void levelDesignInput(int blockX, int blockY)
 		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
 			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
 			if (b) {
-				*b = {};
+				//*b = {};
+				spawnDroppedItem({ (float)blockX + 0.5f, (float)blockY + 0.5f }, b->type);
 			}
+			*b = {};
+
 		}
 
 		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
