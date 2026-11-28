@@ -7,7 +7,7 @@
 
 struct AssetManager;
 
-struct DroppedItem : Entity {
+struct DroppedItem : public Entity {
 	
 	DroppedItem() {
 		physics.transform.w = 0.8f;

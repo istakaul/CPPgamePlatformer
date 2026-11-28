@@ -8,7 +8,7 @@
 
 struct AssetManager;
 
-struct Slime : Entity {
+struct Slime : public Entity {
 	Slime() {
 		physics.transform.w = 0.8f;
 		physics.transform.h = 0.8f;

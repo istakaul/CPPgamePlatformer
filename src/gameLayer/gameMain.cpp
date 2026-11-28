@@ -16,6 +16,7 @@
 #include <entityIdHolder.h>
 #include <entity.h>
 #include <entities/droppedItem.h>
+#include <player.h>
 
 struct GameData {
 	GameMap gameMap;
@@ -30,7 +31,7 @@ struct GameData {
 
 	char saveName[100] = {};
 
-	PhysicalEntity player;
+	Player player;
 	EntityHolder entities;
 
 } gameData;
@@ -89,8 +90,8 @@ bool initGame()
 	gameData.camera.zoom = 100.f; // no zoom
 
 	gameData.player.teleport({ 20,100 });
-	gameData.player.transform.w = 0.9f;
-	gameData.player.transform.h = 1.8f;
+	gameData.player.physics.transform.w = 0.9f;
+	gameData.player.physics.transform.h = 1.8f;
 
 	spawnSlime({ 22, 100 });
 
@@ -121,23 +122,30 @@ bool updateGame()
 #pragma region player movement
 
 	static float CAMERA_SPEED = 10;
-	if (IsKeyDown(KEY_LEFT)) { gameData.player.transform.pos.x -= CAMERA_SPEED * deltaTime; }
-	if (IsKeyDown(KEY_RIGHT)) { gameData.player.transform.pos.x += CAMERA_SPEED * deltaTime; }
-	if (IsKeyDown(KEY_UP)) { gameData.player.transform.pos.y -= CAMERA_SPEED * deltaTime; }
-	if (IsKeyDown(KEY_DOWN)) { gameData.player.transform.pos.y += CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_LEFT)) { gameData.player.physics.transform.pos.x -= CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_RIGHT)) { gameData.player.physics.transform.pos.x += CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_UP)) { gameData.player.physics.transform.pos.y -= CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_DOWN)) { gameData.player.physics.transform.pos.y += CAMERA_SPEED * deltaTime; }
 
-	if (IsKeyDown(KEY_SPACE)) { gameData.player.jump(10); }
+	if (IsKeyDown(KEY_SPACE)) { gameData.player.physics.jump(10); }
 
 #pragma endregion
 
 #pragma region entities
 
-	gameData.player.applyGravity();
-	gameData.player.updateForces(deltaTime);
-	gameData.player.resolveConstraints(gameData.gameMap);
-	//gameData.player.checkCollisionOnce(gameData.player.transform.pos, gameData.gameMap);
-	gameData.camera.target = gameData.player.transform.pos;
-	gameData.player.updateFinal();
+	auto updateEntityPhysics = [&](auto &entity, bool applyGravity = true) {
+		if (applyGravity) { entity.physics.applyGravity(); }
+
+		entity.physics.updateForces(deltaTime);
+		entity.physics.resolveConstraints(gameData.gameMap);
+			//gameData.player.checkCollisionOnce(gameData.player.transform.pos, gameData.gameMap);
+		entity.physics.updateFinal();
+
+		};
+	
+	updateEntityPhysics(gameData.player, false);
+
+	gameData.camera.target = gameData.player.physics.transform.pos;
 
 	std::ranlux24_base rng(std::random_device{}());
 	
@@ -165,11 +173,7 @@ bool updateGame()
 		}
 		else {
 			// physics
-			//it->second->update(deltaTime, updateData);
-			it->second->physics.applyGravity();
-			it->second->physics.updateForces(deltaTime);
-			it->second->physics.resolveConstraints(gameData.gameMap);
-			it->second->physics.updateFinal();
+			updateEntityPhysics(*it->second);
 
 			++it;
 		}
@@ -276,12 +280,12 @@ bool updateGame()
 
 #pragma region draw Player
 	
-	Transform2D playerSprite = gameData.player.transform;
+	Transform2D playerSprite = gameData.player.physics.transform;
 	playerSprite.w = 1;
 	playerSprite.h = 2;
 
 	// move the sprite so that the bottom of the sprite matches the bottom of the collider
-	playerSprite.pos.y -= (playerSprite.h - gameData.player.transform.h) / 2;
+	playerSprite.pos.y -= (playerSprite.h - gameData.player.physics.transform.h) / 2;
 
 	DrawTexturePro(
 		assetManager.player,
@@ -293,7 +297,7 @@ bool updateGame()
 	);
 	
 	// draw the outline to see what the real collider is
-	DrawRectangleLinesEx(gameData.player.transform.getAABB(), 0.1, { 20, 101, 250, 120 });
+	DrawRectangleLinesEx(gameData.player.physics.transform.getAABB(), 0.1, { 20, 101, 250, 120 });
 
 #pragma endregion
 
